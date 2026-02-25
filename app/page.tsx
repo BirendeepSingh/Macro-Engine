@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { createBrowserClient } from "@supabase/ssr";
@@ -120,7 +121,7 @@ export default function Home() {
           .insert({
             user_id: userId,
             plan_json: plan,
-            payment_status: "dev_bypass", // We will change this to 'paid' when Razorpay is attached
+            payment_status: "paid", // We will change this to 'paid' when Razorpay is attached
           });
 
         if (dbError) {
@@ -255,21 +256,85 @@ export default function Home() {
     }
   };
 
-  const handlePremiumAction = () => {
+  const handlePremiumAction = async () => {
     if (!userId) {
       router.push("/login");
       return;
     }
-    
-    // TEMPORARY BYPASS: Directly trigger the AI generation since Razorpay is paused
-    generateAIPDF();
+
+    setIsGenerating(true);
+
+    try {
+      // 1. Create Order
+      const orderRes = await fetch("/api/create-order", { method: "POST" });
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok) throw new Error("Failed to create order");
+
+      // 2. Open Razorpay Modal
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: "INR",
+        name: "Macro Engine",
+        description: "Premium 7-Day AI Protocol",
+        order_id: orderData.id,
+        prefill: {
+          email: userEmail || "",
+        },
+        theme: {
+          color: "#39FF14",
+        },
+        handler: async function (response: any) {
+          // 3. Verify Payment Signature
+          const verifyRes = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+
+          const verifyData = await verifyRes.json();
+
+          if (verifyData.success) {
+            // 4. Payment Verified! Generate the plan.
+            await generateAIPDF();
+          } else {
+            alert("Payment verification failed.");
+            setIsGenerating(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsGenerating(false); // Reset button if they close the window
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        alert(`Payment Failed: ${response.error.description}`);
+        setIsGenerating(false);
+      });
+      rzp.open();
+
+    } catch (error) {
+      console.error(error);
+      alert("Checkout initialization failed.");
+      setIsGenerating(false);
+    }
   };
 
   return (
     <div 
       className="min-h-screen text-zinc-100 font-sans selection:bg-[#39FF14] selection:text-black bg-cover bg-center bg-fixed relative"
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2000&auto=format&fit=crop')" }}
-    >
+      
+    ><Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
       <div className="absolute inset-0 bg-[#0a0a0a]/85 z-0"></div> {/* This darkens the photo so text is readable */}
 
       {/* TOP NAVIGATION BAR */}
