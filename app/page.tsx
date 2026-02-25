@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import Script from "next/script";
 import { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
@@ -332,7 +332,7 @@ export default function Home() {
     <div 
       className="min-h-screen text-zinc-100 font-sans selection:bg-[#39FF14] selection:text-black bg-cover bg-center bg-fixed relative"
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2000&auto=format&fit=crop')" }}
-      
+
     ><Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
       <div className="absolute inset-0 bg-[#0a0a0a]/85 z-0"></div> {/* This darkens the photo so text is readable */}
@@ -487,12 +487,25 @@ export default function Home() {
                   ? "🧠 Validating Data & Building..." 
                   : !userId 
                     ? "🔒 Login to Unlock Premium 7-Day Protocol" 
-                    : "💳 Get Premium AI Protocol (₹149)"}
+                    : "💳 Engineer My Exact Action Plan (₹79)"}
               </button>
             </div>
           )}
         </div>
       </main>
+
+      {/* COMPLIANCE FOOTER */}
+      <footer className="relative z-10 w-full border-t border-zinc-800/80 bg-[#0a0a0a]/90 backdrop-blur-md py-8 mt-12">
+        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-zinc-500">
+          <p>© 2026 Macro Engine. All rights reserved.</p>
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link href="/legal" className="hover:text-[#39FF14] transition-colors">Terms & Conditions</Link>
+            <Link href="/legal" className="hover:text-[#39FF14] transition-colors">Privacy Policy</Link>
+            <Link href="/legal" className="hover:text-[#39FF14] transition-colors">Refund Policy</Link>
+            <Link href="/legal" className="hover:text-[#39FF14] transition-colors">Contact Us</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
